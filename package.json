@@ -2,7 +2,7 @@
   "private": true,
   "scripts": {
     "dev": "next",
-    "build": "next build",
+    "build": "rm node_modules/roughjs/bundled/rough.js && next build",
     "start": "next start"
   },
   "dependencies": {

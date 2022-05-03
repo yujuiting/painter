@@ -5,11 +5,11 @@ const pathToRemove = [
   path.resolve(process.cwd(), "node_modules/roughjs/bundled/rough.js"),
   path.resolve(
     process.cwd(),
-    "node_modules/@types/react-color/node_modules/react"
+    "node_modules/@types/react-color/node_modules/@types/react"
   ),
   path.resolve(
     process.cwd(),
-    "node_modules/@types/reactcss/node_modules/react"
+    "node_modules/@types/reactcss/node_modules/@types/react"
   ),
 ];
 

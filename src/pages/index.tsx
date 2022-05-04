@@ -31,9 +31,10 @@ type Point = [x: number, y: number];
 
 const pointZero: Point = [0, 0];
 
-const Animation = Math.random() >= 0.5 ? AnimationA : AnimationB;
-
 export default function Index() {
+  const [Animation] = useState(() =>
+    Math.random() >= 0.5 ? AnimationA : AnimationB
+  );
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [currentTool, setCurrentTool] = useState<Tool>(tools[0]);
   const [fillColor, setFillColor] = useState("#ff0000");

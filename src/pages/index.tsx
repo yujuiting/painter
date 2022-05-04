@@ -12,6 +12,8 @@ import {
   Stack,
   Text,
   Textarea,
+  RadioGroup,
+  Radio,
 } from "@chakra-ui/react";
 
 import type { Drawable, Options as DrawOptions } from "roughjs/bin/core";
@@ -32,9 +34,7 @@ type Point = [x: number, y: number];
 const pointZero: Point = [0, 0];
 
 export default function Index() {
-  const [Animation] = useState(() =>
-    Math.random() >= 0.5 ? AnimationA : AnimationB
-  );
+  const [gear, setGear] = useState("A");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [currentTool, setCurrentTool] = useState<Tool>(tools[0]);
   const [fillColor, setFillColor] = useState("#ff0000");
@@ -171,7 +171,7 @@ export default function Index() {
   return (
     <Center minH="100vh">
       <Stack>
-        <Stack direction="row">
+        <Stack direction="row" align="center">
           {tools.map(renderTool)}
           <Popover closeOnBlur>
             <PopoverTrigger>
@@ -205,6 +205,13 @@ export default function Index() {
               />
             </PopoverContent>
           </Popover>
+          <Text>Animation:</Text>
+          <RadioGroup value={gear} onChange={setGear}>
+            <Stack direction="row">
+              <Radio value="A">A</Radio>
+              <Radio value="B">B</Radio>
+            </Stack>
+          </RadioGroup>
         </Stack>
 
         <Box pos="relative" border="1px solid black" w="600px" h="600px">
@@ -237,7 +244,8 @@ export default function Index() {
                 yChannelSelector="G"
               />
             </filter>
-            <Animation />
+            {gear === "A" && <AnimationA />}
+            {gear === "B" && <AnimationB />}
           </chakra.svg>
           <canvas ref={canvasRef} width="600px" height="600px" />
         </Box>

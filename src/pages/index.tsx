@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import rough from "roughjs";
 
 import {
+  chakra,
   Box,
   Button,
   Center,
@@ -10,10 +11,12 @@ import {
   PopoverTrigger,
   Stack,
   Text,
+  Textarea,
 } from "@chakra-ui/react";
 
 import type { Drawable, Options as DrawOptions } from "roughjs/bin/core";
 import { SketchPicker } from "react-color";
+import { AnimationA, AnimationB } from "../components/svgs";
 
 const tools = [
   // "select",
@@ -28,12 +31,14 @@ type Point = [x: number, y: number];
 
 const pointZero: Point = [0, 0];
 
+const Animation = Math.random() >= 0.5 ? AnimationA : AnimationB;
+
 export default function Index() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [currentTool, setCurrentTool] = useState<Tool>(tools[0]);
   const [fillColor, setFillColor] = useState("#ff0000");
   const [strokeColor, setStrokeColor] = useState("#000000");
-  const [svgSize, setSvgSize] = useState(0);
+  const [svg, setSvg] = useState("");
   const dataRef = useRef({
     sp: pointZero,
     cp: pointZero,
@@ -97,12 +102,11 @@ export default function Index() {
       }
       if (drawable) dataRef.current.drawables.push(drawable);
 
-      let svgSize = 0;
       const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
       for (const drawable of dataRef.current.drawables) {
         svg.appendChild(rough.svg(svg).draw(drawable));
       }
-      setSvgSize(Buffer.byteLength(svg.innerHTML));
+      setSvg(svg.innerHTML);
     }
 
     function onMouseMove(e: MouseEvent) {
@@ -164,7 +168,7 @@ export default function Index() {
   }
 
   return (
-    <Center h="100vh">
+    <Center minH="100vh">
       <Stack>
         <Stack direction="row">
           {tools.map(renderTool)}
@@ -202,17 +206,84 @@ export default function Index() {
           </Popover>
         </Stack>
 
-        <Box border="1px solid black" w="600px" h="600px">
+        <Box pos="relative" border="1px solid black" w="600px" h="600px">
+          <chakra.svg
+            width="600px"
+            height="600px"
+            pos="absolute"
+            pointerEvents="none"
+          >
+            <filter xmlns="http://www.w3.org/2000/svg" id="displacementFilter">
+              <feTurbulence
+                id="turbulenceMap"
+                type="turbulence"
+                baseFrequency="0.05"
+                numOctaves="2"
+                result="turbulence"
+              >
+                <animate
+                  attributeName="baseFrequency"
+                  values="0.01;0.001;0.01"
+                  dur="4s"
+                  repeatCount="indefinite"
+                />
+              </feTurbulence>
+              <feDisplacementMap
+                in2="turbulence"
+                in="SourceGraphic"
+                scale="9"
+                xChannelSelector="R"
+                yChannelSelector="G"
+              />
+            </filter>
+            <Animation />
+          </chakra.svg>
           <canvas ref={canvasRef} width="600px" height="600px" />
         </Box>
 
         <Box border="1px solid" overflow="hidden">
           <Box
             h={2}
-            w={`${svgSize / 245.76}%`}
-            bg={svgSize > 24576 ? "red" : "#000"}
+            w={`${Buffer.byteLength(svg) / 245.76}%`}
+            bg={Buffer.byteLength(svg) > 24576 ? "red" : "#000"}
           />
         </Box>
+        {/* <Box>
+          <svg width="600px" height="600px">
+            <filter xmlns="http://www.w3.org/2000/svg" id="displacementFilter">
+              <feTurbulence
+                id="turbulenceMap"
+                type="turbulence"
+                baseFrequency="0.05"
+                numOctaves="2"
+                result="turbulence"
+              >
+                <animate
+                  attributeName="baseFrequency"
+                  values="0.01;0.001;0.01"
+                  dur="4s"
+                  repeatCount="indefinite"
+                />
+              </feTurbulence>
+              <feDisplacementMap
+                in2="turbulence"
+                in="SourceGraphic"
+                scale="9"
+                xChannelSelector="R"
+                yChannelSelector="G"
+              />
+            </filter>
+            <Animation />
+            <g dangerouslySetInnerHTML={{ __html: svg }} />
+          </svg>
+        </Box> */}
+        {/* <Textarea
+          maxW="600px"
+          h="600px"
+          whiteSpace="pre-wrap"
+          value={svg}
+          readOnly
+        /> */}
       </Stack>
     </Center>
   );

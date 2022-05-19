@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "dev": "next",
+    "dev": "node scripts/prebuild.js && next",
     "build": "node scripts/prebuild.js && next build",
     "start": "next start"
   },
@@ -15,6 +15,7 @@
     "react": "^17.0.2",
     "react-color": "^2.19.3",
     "react-dom": "^17.0.2",
+    "react-icons": "^4.3.1",
     "roughjs": "^4.5.2",
     "svgo": "^2.8.0"
   },
@@ -24,6 +25,7 @@
     "@types/react-color": "^3.0.6",
     "@types/react-dom": "^17.0.3",
     "@types/svgo": "^2.6.3",
+    "prettier": "^2.6.2",
     "typescript": "4.3.2"
   }
 }

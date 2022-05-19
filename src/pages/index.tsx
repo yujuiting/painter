@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import rough from "roughjs";
+import { useEffect, useMemo, useRef, useState } from 'react'
+import rough from 'roughjs'
+import { FaUndo, FaRedo } from 'react-icons/fa'
 
 import {
   chakra,
@@ -14,145 +15,35 @@ import {
   Textarea,
   RadioGroup,
   Radio,
-} from "@chakra-ui/react";
+  IconButton,
+  Divider,
+} from '@chakra-ui/react'
 
-import type { Drawable, Options as DrawOptions } from "roughjs/bin/core";
-import { SketchPicker } from "react-color";
-import { AnimationA, AnimationB } from "../components/svgs";
-
-const tools = [
-  // "select",
-  "circle",
-  "rect",
-  "line",
-] as const;
-
-type Tool = typeof tools[number];
-
-type Point = [x: number, y: number];
-
-const pointZero: Point = [0, 0];
+import type { Drawable, Options as DrawOptions } from 'roughjs/bin/core'
+import { SketchPicker } from 'react-color'
+import { AnimationA, AnimationB } from '../components/svgs'
+import { Painter, Tool, tools } from 'libs/painter/Painter'
+import useValue from 'hooks/useValue'
+import PainterCanvas from 'components/PainterCanvas'
+import Ellipse from 'libs/math/Ellipse'
+import Line from 'libs/math/Line'
+import Rect from 'libs/math/Rect'
 
 export default function Index() {
-  const [gear, setGear] = useState("A");
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [currentTool, setCurrentTool] = useState<Tool>(tools[0]);
-  const [fillColor, setFillColor] = useState("#ff0000");
-  const [strokeColor, setStrokeColor] = useState("#000000");
-  const [svg, setSvg] = useState("");
-  const dataRef = useRef({
-    sp: pointZero,
-    cp: pointZero,
-    d: pointZero,
-    isMouseDown: false,
-    isDrawing: false,
-    drawables: [] as Drawable[],
-    tool: currentTool,
-    fillColor,
-    strokeColor,
-  });
+  const [painter] = useState(() => new Painter())
+  const [currentTool, setTool] = useValue(painter.tool)
+  const [fillColor, setFillColor] = useValue(painter.fillColor)
+  const [strokeColor, setStrokeColor] = useValue(painter.strokeColor)
+  const [drawings] = useValue(painter.drawings)
+  const svg = useMemo(() => {
+    if (!process.browser) return ''
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    const roughSvg = rough.svg(svg)
+    for (const drawing of drawings) svg.appendChild(roughSvg.draw(drawing.drawable))
 
-  useEffect(() => {
-    dataRef.current.tool = currentTool;
-    dataRef.current.fillColor = fillColor;
-    dataRef.current.strokeColor = strokeColor;
-  }, [currentTool, fillColor, strokeColor]);
-
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    const roughCanvas = rough.canvas(canvas);
-
-    function onMouseDown(e: MouseEvent) {
-      dataRef.current.sp = [e.offsetX, e.offsetY];
-      dataRef.current.isMouseDown = true;
-    }
-
-    function onMouseUp(e: MouseEvent) {
-      dataRef.current.isMouseDown = false;
-      if (!dataRef.current.isDrawing) return;
-      dataRef.current.isDrawing = false;
-      ctx?.clearRect(0, 0, 600, 600);
-      for (const drawable of dataRef.current.drawables) {
-        roughCanvas.draw(drawable);
-      }
-      let drawable: Drawable | undefined;
-      const { sp, cp, d } = dataRef.current;
-      const options: DrawOptions = {
-        fill: dataRef.current.fillColor,
-        stroke: dataRef.current.strokeColor,
-        strokeWidth: 5,
-        simplification: 1000,
-        disableMultiStroke: true,
-        disableMultiStrokeFill: true,
-      };
-      switch (dataRef.current.tool) {
-        case "rect":
-          drawable = roughCanvas.rectangle(sp[0], sp[1], d[0], d[1], options);
-          break;
-        case "circle": {
-          const cx = sp[0] + d[0] / 2;
-          const cy = sp[1] + d[1] / 2;
-          drawable = roughCanvas.ellipse(cx, cy, d[0], d[1], options);
-          break;
-        }
-        case "line":
-          drawable = roughCanvas.line(sp[0], sp[1], cp[0], cp[1], options);
-          break;
-      }
-      if (drawable) dataRef.current.drawables.push(drawable);
-
-      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      for (const drawable of dataRef.current.drawables) {
-        svg.appendChild(rough.svg(svg).draw(drawable));
-      }
-      setSvg(svg.innerHTML);
-    }
-
-    function onMouseMove(e: MouseEvent) {
-      dataRef.current.cp = [e.offsetX, e.offsetY];
-      if (!dataRef.current.isMouseDown) return;
-      if (!dataRef.current.isDrawing) dataRef.current.isDrawing = true;
-      const { sp, cp } = dataRef.current;
-      dataRef.current.d = [cp[0] - sp[0], cp[1] - sp[1]];
-      const { d } = dataRef.current;
-      ctx?.clearRect(0, 0, 600, 600);
-      for (const drawable of dataRef.current.drawables) {
-        roughCanvas.draw(drawable);
-      }
-      ctx?.beginPath();
-      switch (dataRef.current.tool) {
-        case "rect":
-          ctx?.rect(sp[0], sp[1], d[0], d[1]);
-          break;
-        case "circle": {
-          const cx = sp[0] + d[0] / 2;
-          const cy = sp[1] + d[1] / 2;
-          const dx = Math.abs(d[0]) / 2;
-          const dy = Math.abs(d[1]) / 2;
-          ctx?.ellipse(cx, cy, dx, dy, 0, 0, 2 * Math.PI);
-          break;
-        }
-        case "line":
-          ctx?.moveTo(sp[0], sp[1]);
-          ctx?.lineTo(cp[0], cp[1]);
-          break;
-      }
-      ctx?.stroke();
-      ctx?.closePath();
-    }
-
-    canvas.addEventListener("mousedown", onMouseDown);
-    canvas.addEventListener("mouseup", onMouseUp);
-    canvas.addEventListener("mousemove", onMouseMove);
-
-    return () => {
-      canvas.removeEventListener("mousedown", onMouseDown);
-      canvas.removeEventListener("mouseup", onMouseUp);
-      canvas.removeEventListener("mousemove", onMouseMove);
-    };
-  }, []);
+    return svg.innerHTML
+  }, [drawings])
+  const [gear, setGear] = useState('A')
 
   function renderTool(tool: Tool) {
     return (
@@ -160,17 +51,29 @@ export default function Index() {
         key={tool}
         variant="outline"
         textTransform="capitalize"
-        onClick={() => setCurrentTool(tool)}
+        onClick={() => setTool(tool)}
         isActive={currentTool === tool}
       >
         {tool}
       </Button>
-    );
+    )
   }
 
   return (
     <Center minH="100vh">
       <Stack>
+        <Stack direction="row" align="center">
+          <IconButton aria-label="undo" icon={<FaUndo />} onClick={() => painter.undo()} />
+          <IconButton aria-label="redo" icon={<FaRedo />} onClick={() => painter.redo()} />
+          <Divider orientation="vertical" h={8} />
+          <Text>Animation:</Text>
+          <RadioGroup value={gear} onChange={setGear}>
+            <Stack direction="row">
+              <Radio value="A">A</Radio>
+              <Radio value="B">B</Radio>
+            </Stack>
+          </RadioGroup>
+        </Stack>
         <Stack direction="row" align="center">
           {tools.map(renderTool)}
           <Popover closeOnBlur>
@@ -183,10 +86,7 @@ export default function Index() {
               </Button>
             </PopoverTrigger>
             <PopoverContent w="fit-content">
-              <SketchPicker
-                color={fillColor}
-                onChange={(c) => setFillColor(c.hex)}
-              />
+              <SketchPicker color={fillColor} onChange={c => setFillColor(c.hex)} />
             </PopoverContent>
           </Popover>
           <Popover closeOnBlur>
@@ -199,28 +99,13 @@ export default function Index() {
               </Button>
             </PopoverTrigger>
             <PopoverContent w="fit-content">
-              <SketchPicker
-                color={strokeColor}
-                onChange={(c) => setStrokeColor(c.hex)}
-              />
+              <SketchPicker color={strokeColor} onChange={c => setStrokeColor(c.hex)} />
             </PopoverContent>
           </Popover>
-          <Text>Animation:</Text>
-          <RadioGroup value={gear} onChange={setGear}>
-            <Stack direction="row">
-              <Radio value="A">A</Radio>
-              <Radio value="B">B</Radio>
-            </Stack>
-          </RadioGroup>
         </Stack>
 
         <Box pos="relative" border="1px solid black" w="600px" h="600px">
-          <chakra.svg
-            width="600px"
-            height="600px"
-            pos="absolute"
-            pointerEvents="none"
-          >
+          <chakra.svg width="600px" height="600px" pos="absolute" pointerEvents="none">
             <filter xmlns="http://www.w3.org/2000/svg" id="displacementFilter">
               <feTurbulence
                 id="turbulenceMap"
@@ -229,12 +114,7 @@ export default function Index() {
                 numOctaves="2"
                 result="turbulence"
               >
-                <animate
-                  attributeName="baseFrequency"
-                  values="0.01;0.001;0.01"
-                  dur="4s"
-                  repeatCount="indefinite"
-                />
+                <animate attributeName="baseFrequency" values="0.01;0.001;0.01" dur="4s" repeatCount="indefinite" />
               </feTurbulence>
               <feDisplacementMap
                 in2="turbulence"
@@ -244,18 +124,14 @@ export default function Index() {
                 yChannelSelector="G"
               />
             </filter>
-            {gear === "A" && <AnimationA />}
-            {gear === "B" && <AnimationB />}
+            {gear === 'A' && <AnimationA />}
+            {gear === 'B' && <AnimationB />}
           </chakra.svg>
-          <canvas ref={canvasRef} width="600px" height="600px" />
+          <PainterCanvas painter={painter} width={600} height={600} />
         </Box>
 
         <Box border="1px solid" overflow="hidden">
-          <Box
-            h={2}
-            w={`${Buffer.byteLength(svg) / 245.76}%`}
-            bg={Buffer.byteLength(svg) > 24576 ? "red" : "#000"}
-          />
+          <Box h={2} w={`${Buffer.byteLength(svg) / 245.76}%`} bg={Buffer.byteLength(svg) > 24576 ? 'red' : '#000'} />
         </Box>
         {/* <Box>
           <svg width="600px" height="600px">
@@ -295,5 +171,5 @@ export default function Index() {
         /> */}
       </Stack>
     </Center>
-  );
+  )
 }

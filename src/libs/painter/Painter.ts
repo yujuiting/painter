@@ -34,6 +34,8 @@ export class Painter {
 
   currentHistory = new Value(0)
 
+  selectedDrawing = new Value<Drawing | null>(null)
+
   generator = rough.generator({
     options: {
       strokeWidth: 5,
@@ -64,6 +66,7 @@ export class Painter {
   }
 
   remove(drawing: Drawing) {
+    if (this.selectedDrawing.get() === drawing) this.selectedDrawing.set(null)
     const drawings = this.drawings.get()
     const index = drawings.indexOf(drawing)
     if (index === -1) return
@@ -73,12 +76,16 @@ export class Painter {
 
   findByPoint(vector: Vector) {
     const drawings = this.drawings.get()
-    for (let i = drawings.length - 1; i > 0; i--) {
+    for (let i = drawings.length - 1; i >= 0; i--) {
       const drawing = drawings[i]
       if (drawing.hitbox.contains(vector)) {
         return drawing
       }
     }
+  }
+
+  selectByPoint(vector: Vector) {
+    this.selectedDrawing.set(this.findByPoint(vector) || null)
   }
 
   redo() {

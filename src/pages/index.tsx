@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import rough from 'roughjs'
-import { FaUndo, FaRedo } from 'react-icons/fa'
+import { FaUndo, FaRedo, FaTrash } from 'react-icons/fa'
 
 import {
   chakra,
@@ -35,6 +35,7 @@ export default function Index() {
   const [fillColor, setFillColor] = useValue(painter.fillColor)
   const [strokeColor, setStrokeColor] = useValue(painter.strokeColor)
   const [drawings] = useValue(painter.drawings)
+  const [selectedDrawing] = useValue(painter.selectedDrawing)
   const svg = useMemo(() => {
     if (!process.browser) return ''
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
@@ -65,6 +66,12 @@ export default function Index() {
         <Stack direction="row" align="center">
           <IconButton aria-label="undo" icon={<FaUndo />} onClick={() => painter.undo()} />
           <IconButton aria-label="redo" icon={<FaRedo />} onClick={() => painter.redo()} />
+          <IconButton
+            aria-label="delete"
+            icon={<FaTrash />}
+            disabled={!selectedDrawing}
+            onClick={() => selectedDrawing && painter.remove(selectedDrawing)}
+          />
           <Divider orientation="vertical" h={8} />
           <Text>Animation:</Text>
           <RadioGroup value={gear} onChange={setGear}>

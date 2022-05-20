@@ -1,5 +1,7 @@
-import Vector from "./Vector";
+import Vector from './Vector'
 
 export default interface Shape {
-  contains(point: Vector): boolean;
+  min: Vector
+  max: Vector
+  contains(point: Vector): boolean
 }

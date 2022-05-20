@@ -65,15 +65,16 @@ export default function PainterCanvas({ painter, ...props }: PainterCanvasProps)
       if (isMouseDown) return
       startPoint.setTo(e.offsetX, e.offsetY)
       currentPoint.setTo(e.offsetX, e.offsetY)
+      delta = delta.copy(currentPoint).subtract(startPoint)
       isMouseDown = true
       tool = painter.tool.get()
     }
 
     function onMouseMove(e: MouseEvent) {
       currentPoint.setTo(e.offsetX, e.offsetY)
+      delta = delta.copy(currentPoint).subtract(startPoint)
       if (!isMouseDown) return
       if (!isDrawing && tool !== 'select') isDrawing = true
-      delta = delta.copy(currentPoint).subtract(startPoint)
       redraw()
       ctx.beginPath()
       switch (tool) {
@@ -99,9 +100,9 @@ export default function PainterCanvas({ painter, ...props }: PainterCanvasProps)
 
     function onMouseUp(e: MouseEvent) {
       currentPoint.setTo(e.offsetX, e.offsetY)
+      delta = delta.copy(currentPoint).subtract(startPoint)
       if (!isMouseDown) return
       isMouseDown = false
-      isDrawing = false
       let shape: Shape | undefined
       switch (tool) {
         case 'select': {
@@ -115,11 +116,11 @@ export default function PainterCanvas({ painter, ...props }: PainterCanvasProps)
           break
         }
         case 'line': {
-          shape = new Line(startPoint, currentPoint)
+          shape = new Line(startPoint.clone(), currentPoint.clone())
           break
         }
         case 'rect': {
-          shape = new Rect(startPoint, delta.x, delta.y)
+          shape = new Rect(startPoint.clone(), delta.x, delta.y)
           break
         }
       }

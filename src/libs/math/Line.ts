@@ -54,7 +54,7 @@ export default class Line implements Shape {
   /**
    * @see http://stackoverflow.com/a/11908158/109458
    */
-  public contains(point: Vector, threshold: number = 1e-6): boolean {
+  public contains(point: Vector, threshold: number = 10000): boolean {
     const dxc = point.x - this.begin.x
     const dyc = point.y - this.begin.y
 

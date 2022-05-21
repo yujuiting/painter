@@ -20,31 +20,17 @@ export default function PainterCanvas({ painter, ...props }: PainterCanvasProps)
   const roughRef = useRef<RoughCanvas>()
   const [drawings] = useValue(painter.drawings)
   const [selectedDrawing] = useValue(painter.selectedDrawing)
+  const [selectionHandler] = useValue(painter.selectionHandler)
 
   const redraw = useCallbackRef(() => {
     if (!canvasRef.current) return
     if (!roughRef.current) return
     const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d')!
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
     const roughCanvas = roughRef.current
-    for (const drawing of painter.drawings.get()) roughCanvas.draw(drawing.drawable)
-    const selected = painter.selectedDrawing.get()
-    if (selected) {
-      ctx.beginPath()
-      ctx.rect(
-        selected.hitbox.min.x,
-        selected.hitbox.min.y,
-        selected.hitbox.max.x - selected.hitbox.min.x,
-        selected.hitbox.max.y - selected.hitbox.min.y,
-      )
-      ctx.strokeStyle = '#ff0000'
-      ctx.stroke()
-      ctx.closePath()
-    }
+    painter.applyToCanvas(canvas, roughCanvas)
   }, [])
 
-  useEffect(redraw, [drawings, selectedDrawing])
+  useEffect(redraw, [drawings, selectedDrawing, selectionHandler])
 
   useEffect(() => {
     if (!canvasRef.current) return
@@ -73,9 +59,11 @@ export default function PainterCanvas({ painter, ...props }: PainterCanvasProps)
     function onMouseMove(e: MouseEvent) {
       currentPoint.setTo(e.offsetX, e.offsetY)
       delta = delta.copy(currentPoint).subtract(startPoint)
+      canvas.style.cursor = painter.getCursor(currentPoint)
       if (!isMouseDown) return
       if (!isDrawing && tool !== 'select') isDrawing = true
       redraw()
+      ctx.strokeStyle = '#000'
       ctx.beginPath()
       switch (tool) {
         case 'ellipse': {
